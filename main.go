@@ -7,7 +7,7 @@ import (
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "¡Hola, Mundo!")
+		fmt.Fprintf(w, "¡Hola Elipse Team!")
 	})
 
 	// Configura el servidor para escuchar en el puerto 8080
