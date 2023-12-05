@@ -1,54 +1,29 @@
+# Docker
+# Build a Docker image
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
 trigger:
 - main
 
-pool:
-  vmImage: 'ubuntu-latest'
+resources:
+- repo: self
 
-steps:
-- task: GoTool@0
-  inputs:
-    version: '1.17'
-  displayName: 'Install Go'
+variables:
+  tag: '$(Build.BuildId)'
 
-- task: Go@0
-  inputs:
-    command: 'get'
-    arguments: '-v -d'
-  displayName: 'Go Get Dependencies'
-
-- task: Go@0
-  inputs:
-    command: 'build'
-    arguments: '-o $(Build.ArtifactStagingDirectory)/myapp'
-  displayName: 'Go Build'
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: 'drop'
-    publishLocation: 'Container'
-  displayName: 'Publish Artifact'
-
-- task: SonarQubePrepare@4
-  inputs:
-    SonarQube: 'SonarQubeServiceConnection'
-    scannerMode: 'CLI'
-    configMode: 'manual'
-    cliProjectKey: 'my-go-project'
-    cliProjectName: 'My Go Project'
-    cliSources: 'src'
-    extraProperties: |
-      sonar.go.tests.reportPaths=reports/test-report.xml
-      sonar.go.coverage.reportPaths=reports/coverage.out
-  displayName: 'Prepare SonarQube analysis'
-
-- script: |
-    # Run your tests and generate coverage report
-    go test -coverprofile=reports/coverage.out ./...
-
-    # Generate JUnit test report
-    go test -json ./... | gotest2junit > reports/test-report.xml
-  displayName: 'Run Tests'
-
-- task: SonarQubeAnalyze@4
-  displayName: 'Run SonarQube analysis'
+stages:
+- stage: Build
+  displayName: Build image
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: Docker@2
+      displayName: Build an image
+      inputs:
+        command: build
+        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        tags: |
+          $(tag)
