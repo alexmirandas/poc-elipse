@@ -25,6 +25,14 @@ steps:
     command: 'build'
     arguments: '-o $(Build.ArtifactStagingDirectory)/myapp'
 
+- task: Docker@2
+  displayName: 'Build Docker image'
+  inputs:
+    command: build
+    dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+    tags: |
+      $(tag)
+
 - script: |
     # Run your tests and generate coverage report
     go test -coverprofile=reports/coverage.out ./...
@@ -36,10 +44,4 @@ steps:
 - task: SonarQubeAnalyze@5
   displayName: 'Run SonarQube analysis'
 
-- task: Docker@2
-  displayName: 'Build Docker image'
-  inputs:
-    command: build
-    dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-    tags: |
-      $(tag)
+
