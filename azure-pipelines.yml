@@ -1,29 +1,59 @@
-# Docker
-# Build a Docker image
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
 - main
+- develop
 
-resources:
-- repo: self
+pr:
+- main
+- develop
 
-variables:
-  tag: '$(Build.BuildId)'
+jobs:
+- job: BuildTestAndDeploy
+  displayName: 'Build, Test, and Deploy'
+  pool:
+    vmImage: 'ubuntu-latest'
 
-stages:
-- stage: Build
-  displayName: Build image
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-    - task: Docker@2
-      displayName: Build an image
-      inputs:
-        command: build
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        tags: |
-          $(tag)
+  steps:
+  - checkout: self
+    persistCredentials: true
+
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '2.1.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  - task: GoTool@0
+    inputs:
+      version: '1.17'
+    displayName: 'Install Go'
+
+  - script: |
+      go get -v -d ./...
+      go build -v ./...
+      go test -v ./...
+    displayName: 'Build and Test Go'
+
+  - task: Docker@2
+    inputs:
+      command: 'buildAndPush'
+      repository: '$(dockerRepository)'
+      tags: '$(Build.SourceBranchName)-$(Build.BuildId)'
+      Dockerfile: '**/Dockerfile'
+    displayName: 'Build and Push Docker Image'
+
+  - task: SSH@0
+    inputs:
+      sshEndpoint: 'yourSSHEndpoint' # Definir un punto de conexión SSH en las configuraciones del proyecto de Azure DevOps
+      runOptions: 'inline'
+      inline: |
+        cd /ruta/a/tu/proyecto
+        docker-compose up -d
+    displayName: 'Run Docker Compose on Remote VM'
+
+  - task: KubernetesManifest@0
+    inputs:
+      action: 'deploy'
+      kubernetesServiceConnection: 'yourK8sConnection' # Definir un punto de conexión a Kubernetes en las configuraciones del proyecto de Azure DevOps
+      manifests: '**/*.yaml' # Puedes ajustar el patrón según la ubicación de tus archivos YAML de Kubernetes
+      containers: '$(dockerRepository)/tu-imagen-docker:$(Build.SourceBranchName)-$(Build.BuildId)'
+    displayName: 'Deploy to Kubernetes'
