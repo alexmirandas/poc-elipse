@@ -19,56 +19,27 @@ steps:
     command: 'get'
     arguments: '-v -d'
 
-- task: Go@0
-  displayName: 'Go Build'
-  inputs:
-    command: 'build'
-    arguments: '-o $(Build.ArtifactStagingDirectory)/myapp'
-
-- task: Docker@2
-  displayName: 'Build Docker image'
-  inputs:
-    command: build
-    dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-    tags: |
-      $(tag)
-
-# Prepare Analysis Configuration task
-# - task: SonarQubePrepare@5
+# - task: Go@0
+#   displayName: 'Go Build'
 #   inputs:
-#     SonarQube: 'YourSonarqubeServerEndpoint'
-#     scannerMode: 'CLI'
-#     configMode: 'manual'
-#     cliProjectKey: 'YourProjectKey'
+#     command: 'build'
+#     arguments: '-o $(Build.ArtifactStagingDirectory)/myapp'
 
-# Run Code Analysis task
-- task: SonarQubeAnalyze@5
-  displayName: 'Run SonarQube analysis'
+# - script: |
+#     # Run your tests and generate coverage report
+#     go test -coverprofile=reports/coverage.out ./...
 
-# # Publish Quality Gate Result task
-# - task: SonarQubePublish@5
+#     # Generate JUnit test report
+#     go test -json ./... | gotest2junit > reports/test-report.xml
+#   displayName: 'Run Tests'
+
+# - task: SonarQubeAnalyze@5
+#   displayName: 'Run SonarQube analysis'
+
+# - task: Docker@2
+#   displayName: 'Build Docker image'
 #   inputs:
-#     pollingTimeoutSec: '300'
-
-# - task: SonarQubePrepare@4
-#   displayName: 'Prepare SonarQube analysis'
-#   inputs:
-#     SonarQube: 'SonarQubeServiceConnection'
-#     scannerMode: 'CLI'
-#     configMode: 'manual'
-#     cliProjectKey: 'my-go-project'
-#     cliProjectName: 'My Go Project'
-#     cliSources: 'src'
-#     extraProperties: |
-#       sonar.go.tests.reportPaths=reports/test-report.xml
-#       sonar.go.coverage.reportPaths=reports/coverage.out
-#   displayName: 'Prepare SonarQube analysis'
-
-- script: |
-    # Run your tests and generate coverage report
-    go test -coverprofile=reports/coverage.out ./...
-
-    # Generate JUnit test report
-    go test -json ./... | gotest2junit > reports/test-report.xml
-  displayName: 'Run Tests'
-
+#     command: build
+#     dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+#     tags: |
+#       $(tag)
